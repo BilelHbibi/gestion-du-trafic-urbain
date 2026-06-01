@@ -114,7 +114,7 @@ app.post('/register', async (req, res) => {
 });
 
 // Connexion (avec rate limiting)
-app.post('/login', rateLimiter(5, 15 * 60 * 1000), async (req, res) => {
+app.post('/login', rateLimiter(20, 15 * 60 * 1000), async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password)
     return res.status(400).json({ error: 'Email et mot de passe requis' });
