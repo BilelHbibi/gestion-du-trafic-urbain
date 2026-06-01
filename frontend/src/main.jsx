@@ -13,7 +13,7 @@ import './styles.css'
 
 // ── Apollo Client : connecte le frontend au gateway GraphQL ──
 const httpLink = createHttpLink({
-  uri: 'http://localhost:4000',
+  uri: 'http://localhost:4000/graphql',
 })
 
 // Ajoute automatiquement le token JWT dans chaque requête

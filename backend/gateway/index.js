@@ -40,12 +40,6 @@ const typeDefs = `#graphql
     created_at: String
   }
 
-  type VehicleList {
-    data: [Vehicle]
-    total: Int
-    page: Int
-    pages: Int
-  }
 
   type GpsPosition {
     id: Int
@@ -172,7 +166,7 @@ const typeDefs = `#graphql
     getUsers: [User]
 
     # Véhicules
-    getVehicles(page: Int, limit: Int): VehicleList
+    getVehicles: [Vehicle]
     getVehicle(id: Int!): Vehicle
     getVehicleHistory(id: Int!, limit: Int): [GpsPosition]
     getLastPosition(id: Int!): GpsPosition
@@ -248,9 +242,9 @@ function buildResolvers(io) {
         (await axios.get(`${AUTH}/users`, auth(token))).data,
 
       // ── Véhicules ───────────────────────────────────────
-      getVehicles: async (_, { page = 1, limit = 50 }, { token }) => {
-        const { data } = await axios.get(`${VEHICLE}/vehicles?page=${page}&limit=${limit}`, auth(token));
-        return data;
+      getVehicles: async (_, __, { token }) => {
+        const { data } = await axios.get(`${VEHICLE}/vehicles`, auth(token));
+        return data.data;
       },
 
       getVehicle: async (_, { id }, { token }) =>
@@ -337,7 +331,7 @@ function buildResolvers(io) {
           ]);
 
         return {
-          total_users:         users.status === 'fulfilled'         ? users.value.data.length            : 0,
+          total_users:         users.status === 'fulfilled'         ? (Array.isArray(users.value.data) ? users.value.data.length : 0) : 0,
           total_vehicles:      vehicleStats.status === 'fulfilled'  ? vehicleStats.value.data.total_vehicles : 0,
           total_zones:         trafficStats.status === 'fulfilled'  ? trafficStats.value.data.total_zones : 0,
           total_incidents:     incidentStats.status === 'fulfilled' ? incidentStats.value.data.total     : 0,
