@@ -225,79 +225,128 @@ const typeDefs = `#graphql
 `;
 
 // ═══════════════════════════════════════════════════════════
-//  RESOLVERS
+//  HELPERS
 // ═══════════════════════════════════════════════════════════
 function auth(token) {
-  return token ? { headers: { authorization: `Bearer ${token}` } } : {};
+  return token ? { headers: { authorization: `Bearer ${token}` }, timeout: 5000 }
+               : { timeout: 5000 };
 }
 
+// Extrait un message lisible depuis une erreur axios et le relance
+function svcErr(err) {
+  const msg = err.response?.data?.error
+    || err.response?.data?.message
+    || err.message
+    || 'Service indisponible';
+  throw new Error(msg);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RESOLVERS
+// ═══════════════════════════════════════════════════════════
 function buildResolvers(io) {
   return {
     Query: {
       // ── Auth ────────────────────────────────────────────
-      me: async (_, __, { token }) =>
-        (await axios.get(`${AUTH}/me`, auth(token))).data,
+      me: async (_, __, { token }) => {
+        try { return (await axios.get(`${AUTH}/me`, auth(token))).data; }
+        catch (e) { svcErr(e); }
+      },
 
-      getUsers: async (_, __, { token }) =>
-        (await axios.get(`${AUTH}/users`, auth(token))).data,
+      getUsers: async (_, __, { token }) => {
+        try { return (await axios.get(`${AUTH}/users`, auth(token))).data; }
+        catch (e) { svcErr(e); }
+      },
 
       // ── Véhicules ───────────────────────────────────────
       getVehicles: async (_, __, { token }) => {
-        const { data } = await axios.get(`${VEHICLE}/vehicles`, auth(token));
-        return data.data;
+        try {
+          const { data } = await axios.get(`${VEHICLE}/vehicles`, auth(token));
+          return Array.isArray(data) ? data : (data.data || []);
+        } catch (e) { svcErr(e); }
       },
 
-      getVehicle: async (_, { id }, { token }) =>
-        (await axios.get(`${VEHICLE}/vehicles/${id}`, auth(token))).data,
+      getVehicle: async (_, { id }, { token }) => {
+        try { return (await axios.get(`${VEHICLE}/vehicles/${id}`, auth(token))).data; }
+        catch (e) { svcErr(e); }
+      },
 
-      getVehicleHistory: async (_, { id, limit = 50 }, { token }) =>
-        (await axios.get(`${VEHICLE}/vehicles/${id}/history?limit=${limit}`, auth(token))).data,
+      getVehicleHistory: async (_, { id, limit = 50 }, { token }) => {
+        try { return (await axios.get(`${VEHICLE}/vehicles/${id}/history?limit=${limit}`, auth(token))).data; }
+        catch (e) { svcErr(e); }
+      },
 
-      getLastPosition: async (_, { id }, { token }) =>
-        (await axios.get(`${VEHICLE}/vehicles/${id}/last-position`, auth(token))).data,
+      getLastPosition: async (_, { id }, { token }) => {
+        try { return (await axios.get(`${VEHICLE}/vehicles/${id}/last-position`, auth(token))).data; }
+        catch (e) { svcErr(e); }
+      },
 
-      getVehicleStats: async (_, __, { token }) =>
-        (await axios.get(`${VEHICLE}/stats`, auth(token))).data,
+      getVehicleStats: async (_, __, { token }) => {
+        try { return (await axios.get(`${VEHICLE}/stats`, auth(token))).data; }
+        catch (e) { svcErr(e); }
+      },
 
       // ── Trafic ──────────────────────────────────────────
-      getZones: async (_, __, { token }) =>
-        (await axios.get(`${TRAFFIC}/zones`, auth(token))).data,
+      getZones: async (_, __, { token }) => {
+        try { return (await axios.get(`${TRAFFIC}/zones`, auth(token))).data; }
+        catch (e) { svcErr(e); }
+      },
 
-      getZoneSummary: async (_, __, { token }) =>
-        (await axios.get(`${TRAFFIC}/zones/summary`, auth(token))).data,
+      getZoneSummary: async (_, __, { token }) => {
+        try { return (await axios.get(`${TRAFFIC}/zones/summary`, auth(token))).data; }
+        catch (e) { svcErr(e); }
+      },
 
-      getCongestedZones: async (_, __, { token }) =>
-        (await axios.get(`${TRAFFIC}/zones/congested`, auth(token))).data,
+      getCongestedZones: async (_, __, { token }) => {
+        try { return (await axios.get(`${TRAFFIC}/zones/congested`, auth(token))).data; }
+        catch (e) { svcErr(e); }
+      },
 
-      getZoneMeasures: async (_, { zone_id, limit = 30 }, { token }) =>
-        (await axios.get(`${TRAFFIC}/zones/${zone_id}/measures?limit=${limit}`, auth(token))).data,
+      getZoneMeasures: async (_, { zone_id, limit = 30 }, { token }) => {
+        try { return (await axios.get(`${TRAFFIC}/zones/${zone_id}/measures?limit=${limit}`, auth(token))).data; }
+        catch (e) { svcErr(e); }
+      },
 
-      getTrafficStats: async (_, __, { token }) =>
-        (await axios.get(`${TRAFFIC}/stats`, auth(token))).data,
+      getTrafficStats: async (_, __, { token }) => {
+        try { return (await axios.get(`${TRAFFIC}/stats`, auth(token))).data; }
+        catch (e) { svcErr(e); }
+      },
 
       // ── Incidents ───────────────────────────────────────
       getIncidents: async (_, { type, status }, { token }) => {
-        const params = new URLSearchParams();
-        if (type)   params.append('type', type);
-        if (status) params.append('status', status);
-        return (await axios.get(`${INCIDENT}/incidents?${params}`, auth(token))).data;
+        try {
+          const params = new URLSearchParams();
+          if (type)   params.append('type', type);
+          if (status) params.append('status', status);
+          return (await axios.get(`${INCIDENT}/incidents?${params}`, auth(token))).data;
+        } catch (e) { svcErr(e); }
       },
 
-      getIncident: async (_, { id }, { token }) =>
-        (await axios.get(`${INCIDENT}/incidents/${id}`, auth(token))).data,
+      getIncident: async (_, { id }, { token }) => {
+        try { return (await axios.get(`${INCIDENT}/incidents/${id}`, auth(token))).data; }
+        catch (e) { svcErr(e); }
+      },
 
-      getIncidentStats: async (_, __, { token }) =>
-        (await axios.get(`${INCIDENT}/incidents/stats`, auth(token))).data,
+      getIncidentStats: async (_, __, { token }) => {
+        try { return (await axios.get(`${INCIDENT}/incidents/stats`, auth(token))).data; }
+        catch (e) { svcErr(e); }
+      },
 
       // ── Notifications ────────────────────────────────────
-      getNotifications: async (_, __, { token }) =>
-        (await axios.get(`${NOTIF}/notifications`, auth(token))).data,
+      getNotifications: async (_, __, { token }) => {
+        try { return (await axios.get(`${NOTIF}/notifications`, auth(token))).data; }
+        catch (e) { svcErr(e); }
+      },
 
-      getUnreadNotifications: async (_, __, { token }) =>
-        (await axios.get(`${NOTIF}/notifications/unread`, auth(token))).data,
+      getUnreadNotifications: async (_, __, { token }) => {
+        try { return (await axios.get(`${NOTIF}/notifications/unread`, auth(token))).data; }
+        catch (e) { svcErr(e); }
+      },
 
-      getNotificationCount: async (_, __, { token }) =>
-        (await axios.get(`${NOTIF}/notifications/count`, auth(token))).data,
+      getNotificationCount: async (_, __, { token }) => {
+        try { return (await axios.get(`${NOTIF}/notifications/count`, auth(token))).data; }
+        catch (e) { svcErr(e); }
+      },
 
       // ── Plateforme ──────────────────────────────────────
       healthCheck: async () => {
@@ -323,105 +372,124 @@ function buildResolvers(io) {
       getPlatformStats: async (_, __, { token }) => {
         const [users, vehicleStats, trafficStats, incidentStats, notifCount] =
           await Promise.allSettled([
-            axios.get(`${AUTH}/users`,              auth(token)),
-            axios.get(`${VEHICLE}/stats`,           auth(token)),
-            axios.get(`${TRAFFIC}/stats`,           auth(token)),
+            axios.get(`${AUTH}/users`,               auth(token)),
+            axios.get(`${VEHICLE}/stats`,            auth(token)),
+            axios.get(`${TRAFFIC}/stats`,            auth(token)),
             axios.get(`${INCIDENT}/incidents/stats`, auth(token)),
             axios.get(`${NOTIF}/notifications/count`, auth(token)),
           ]);
 
         return {
-          total_users:         users.status === 'fulfilled'         ? (Array.isArray(users.value.data) ? users.value.data.length : 0) : 0,
-          total_vehicles:      vehicleStats.status === 'fulfilled'  ? vehicleStats.value.data.total_vehicles : 0,
-          total_zones:         trafficStats.status === 'fulfilled'  ? trafficStats.value.data.total_zones : 0,
-          total_incidents:     incidentStats.status === 'fulfilled' ? incidentStats.value.data.total     : 0,
-          total_notifications: notifCount.status === 'fulfilled'    ? notifCount.value.data.total        : 0,
-          congested_zones:     trafficStats.status === 'fulfilled'  ? trafficStats.value.data.congested  : 0,
+          total_users:         users.status         === 'fulfilled' ? (Array.isArray(users.value.data) ? users.value.data.length : 0) : 0,
+          total_vehicles:      vehicleStats.status  === 'fulfilled' ? (vehicleStats.value.data.total_vehicles || 0) : 0,
+          total_zones:         trafficStats.status  === 'fulfilled' ? (trafficStats.value.data.total_zones   || 0) : 0,
+          total_incidents:     incidentStats.status === 'fulfilled' ? (incidentStats.value.data.total        || 0) : 0,
+          total_notifications: notifCount.status    === 'fulfilled' ? (notifCount.value.data.total           || 0) : 0,
+          congested_zones:     trafficStats.status  === 'fulfilled' ? (trafficStats.value.data.congested     || 0) : 0,
         };
       },
     },
 
     Mutation: {
       // ── Auth ────────────────────────────────────────────
-      register: async (_, args) =>
-        (await axios.post(`${AUTH}/register`, args)).data,
+      register: async (_, args) => {
+        try { return (await axios.post(`${AUTH}/register`, args)).data; }
+        catch (e) { svcErr(e); }
+      },
 
-      login: async (_, args) =>
-        (await axios.post(`${AUTH}/login`, args)).data,
+      login: async (_, args) => {
+        try { return (await axios.post(`${AUTH}/login`, args)).data; }
+        catch (e) { svcErr(e); }
+      },
 
-      deleteUser: async (_, { id }, { token }) =>
-        (await axios.delete(`${AUTH}/users/${id}`, auth(token))).data,
+      deleteUser: async (_, { id }, { token }) => {
+        try { return (await axios.delete(`${AUTH}/users/${id}`, auth(token))).data; }
+        catch (e) { svcErr(e); }
+      },
 
       // ── Véhicules ───────────────────────────────────────
-      addVehicle: async (_, args, { token }) =>
-        (await axios.post(`${VEHICLE}/vehicles`, args, auth(token))).data,
+      addVehicle: async (_, args, { token }) => {
+        try { return (await axios.post(`${VEHICLE}/vehicles`, args, auth(token))).data; }
+        catch (e) { svcErr(e); }
+      },
 
-      updateVehicle: async (_, { id, ...args }, { token }) =>
-        (await axios.put(`${VEHICLE}/vehicles/${id}`, args, auth(token))).data,
+      updateVehicle: async (_, { id, ...args }, { token }) => {
+        try { return (await axios.put(`${VEHICLE}/vehicles/${id}`, args, auth(token))).data; }
+        catch (e) { svcErr(e); }
+      },
 
-      deleteVehicle: async (_, { id }, { token }) =>
-        (await axios.delete(`${VEHICLE}/vehicles/${id}`, auth(token))).data,
+      deleteVehicle: async (_, { id }, { token }) => {
+        try { return (await axios.delete(`${VEHICLE}/vehicles/${id}`, auth(token))).data; }
+        catch (e) { svcErr(e); }
+      },
 
-      addGpsPosition: async (_, { vehicle_id, ...args }, { token }) =>
-        (await axios.post(`${VEHICLE}/vehicles/${vehicle_id}/position`, args, auth(token))).data,
+      addGpsPosition: async (_, { vehicle_id, ...args }, { token }) => {
+        try { return (await axios.post(`${VEHICLE}/vehicles/${vehicle_id}/position`, args, auth(token))).data; }
+        catch (e) { svcErr(e); }
+      },
 
       // ── Trafic ──────────────────────────────────────────
-      createZone: async (_, args, { token }) =>
-        (await axios.post(`${TRAFFIC}/zones`, args, auth(token))).data,
+      createZone: async (_, args, { token }) => {
+        try { return (await axios.post(`${TRAFFIC}/zones`, args, auth(token))).data; }
+        catch (e) { svcErr(e); }
+      },
 
-      deleteZone: async (_, { id }, { token }) =>
-        (await axios.delete(`${TRAFFIC}/zones/${id}`, auth(token))).data,
+      deleteZone: async (_, { id }, { token }) => {
+        try { return (await axios.delete(`${TRAFFIC}/zones/${id}`, auth(token))).data; }
+        catch (e) { svcErr(e); }
+      },
 
       addTrafficMeasure: async (_, { zone_id, density }, { token }) => {
-        const result = (await axios.post(`${TRAFFIC}/zones/${zone_id}/measure`, { density }, auth(token))).data;
-        // Émettre un événement WebSocket si zone congestionnée
-        if (result.level === 'Eleve') {
-          io.emit('traffic_alert', {
-            zone_id,
-            density,
-            level: result.level,
-            zone: result.zone,
-            timestamp: new Date().toISOString(),
-          });
-        }
-        return result;
+        try {
+          const result = (await axios.post(`${TRAFFIC}/zones/${zone_id}/measure`, { density }, auth(token))).data;
+          if (result.level === 'Eleve') {
+            io.emit('traffic_alert', { zone_id, density, level: result.level, zone: result.zone, timestamp: new Date().toISOString() });
+          }
+          return result;
+        } catch (e) { svcErr(e); }
       },
 
       // ── Incidents ───────────────────────────────────────
       reportIncident: async (_, args, { token }) => {
-        const result = (await axios.post(`${INCIDENT}/incidents`, args, auth(token))).data;
-        // Émettre un événement WebSocket temps réel
-        io.emit('new_incident', {
-          id:          result.id,
-          type:        args.type,
-          description: args.description || '',
-          latitude:    args.latitude    || null,
-          longitude:   args.longitude   || null,
-          status:      'Signale',
-          timestamp:   new Date().toISOString(),
-        });
-        return result;
+        try {
+          const result = (await axios.post(`${INCIDENT}/incidents`, args, auth(token))).data;
+          io.emit('new_incident', {
+            id: result.id, type: args.type, description: args.description || '',
+            latitude: args.latitude || null, longitude: args.longitude || null,
+            status: 'Signale', timestamp: new Date().toISOString(),
+          });
+          return result;
+        } catch (e) { svcErr(e); }
       },
 
       updateIncidentStatus: async (_, { id, status }, { token }) => {
-        const result = (await axios.patch(`${INCIDENT}/incidents/${id}/status`, { status }, auth(token))).data;
-        // Notifier via WebSocket
-        io.emit('incident_updated', { id, status, timestamp: new Date().toISOString() });
-        return result;
+        try {
+          const result = (await axios.patch(`${INCIDENT}/incidents/${id}/status`, { status }, auth(token))).data;
+          io.emit('incident_updated', { id, status, timestamp: new Date().toISOString() });
+          return result;
+        } catch (e) { svcErr(e); }
       },
 
-      deleteIncident: async (_, { id }, { token }) =>
-        (await axios.delete(`${INCIDENT}/incidents/${id}`, auth(token))).data,
+      deleteIncident: async (_, { id }, { token }) => {
+        try { return (await axios.delete(`${INCIDENT}/incidents/${id}`, auth(token))).data; }
+        catch (e) { svcErr(e); }
+      },
 
       // ── Notifications ────────────────────────────────────
-      markNotificationRead: async (_, { id }, { token }) =>
-        (await axios.patch(`${NOTIF}/notifications/${id}/read`, {}, auth(token))).data,
+      markNotificationRead: async (_, { id }, { token }) => {
+        try { return (await axios.patch(`${NOTIF}/notifications/${id}/read`, {}, auth(token))).data; }
+        catch (e) { svcErr(e); }
+      },
 
-      markAllNotificationsRead: async (_, __, { token }) =>
-        (await axios.patch(`${NOTIF}/notifications/read-all`, {}, auth(token))).data,
+      markAllNotificationsRead: async (_, __, { token }) => {
+        try { return (await axios.patch(`${NOTIF}/notifications/read-all`, {}, auth(token))).data; }
+        catch (e) { svcErr(e); }
+      },
 
-      deleteNotification: async (_, { id }, { token }) =>
-        (await axios.delete(`${NOTIF}/notifications/${id}`, auth(token))).data,
+      deleteNotification: async (_, { id }, { token }) => {
+        try { return (await axios.delete(`${NOTIF}/notifications/${id}`, auth(token))).data; }
+        catch (e) { svcErr(e); }
+      },
     },
   };
 }
@@ -453,10 +521,6 @@ async function startServer() {
   const server = new ApolloServer({
     typeDefs,
     resolvers: buildResolvers(io),
-    formatError: (err) => ({
-      message: err.message,
-      code:    err.extensions?.code || 'INTERNAL_SERVER_ERROR',
-    }),
   });
 
   await server.start();
