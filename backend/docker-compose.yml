@@ -1,0 +1,182 @@
+version: '3.8'
+
+# ════════════════════════════════════════════════════════════
+#  TRAFFIC PLATFORM — Docker Compose
+#  Usage : docker-compose up --build
+# ════════════════════════════════════════════════════════════
+
+services:
+
+  # ── Base de données ──────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: traffic_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root1234
+      MYSQL_ALLOW_EMPTY_PASSWORD: "no"
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot1234"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - traffic_network
+
+  # ── Service Auth (port 3001) ─────────────────────────────
+  auth:
+    build:
+      context: ./services/auth
+      dockerfile: Dockerfile
+    container_name: traffic_auth
+    restart: unless-stopped
+    environment:
+      PORT: 3001
+      DB_HOST: mysql
+      DB_USER: root
+      DB_PASSWORD: root1234
+      DB_NAME: db_auth
+      JWT_SECRET: traffic_jwt_secret_2024_docker
+    ports:
+      - "3001:3001"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - traffic_network
+
+  # ── Service Vehicle (port 3002) ──────────────────────────
+  vehicle:
+    build:
+      context: ./services/vehicle
+      dockerfile: Dockerfile
+    container_name: traffic_vehicle
+    restart: unless-stopped
+    environment:
+      PORT: 3002
+      DB_HOST: mysql
+      DB_USER: root
+      DB_PASSWORD: root1234
+      DB_NAME: db_vehicles
+      AUTH_SERVICE_URL: http://auth:3001
+    ports:
+      - "3002:3002"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      auth:
+        condition: service_started
+    networks:
+      - traffic_network
+
+  # ── Service Traffic (port 3003) ──────────────────────────
+  traffic:
+    build:
+      context: ./services/traffic
+      dockerfile: Dockerfile
+    container_name: traffic_traffic
+    restart: unless-stopped
+    environment:
+      PORT: 3003
+      DB_HOST: mysql
+      DB_USER: root
+      DB_PASSWORD: root1234
+      DB_NAME: db_traffic
+      AUTH_SERVICE_URL: http://auth:3001
+    ports:
+      - "3003:3003"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      auth:
+        condition: service_started
+    networks:
+      - traffic_network
+
+  # ── Service Incident (port 3004) ─────────────────────────
+  incident:
+    build:
+      context: ./services/incident
+      dockerfile: Dockerfile
+    container_name: traffic_incident
+    restart: unless-stopped
+    environment:
+      PORT: 3004
+      DB_HOST: mysql
+      DB_USER: root
+      DB_PASSWORD: root1234
+      DB_NAME: db_incidents
+      AUTH_SERVICE_URL: http://auth:3001
+      NOTIF_SERVICE_URL: http://notification:3005
+    ports:
+      - "3004:3004"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      auth:
+        condition: service_started
+    networks:
+      - traffic_network
+
+  # ── Service Notification (port 3005) ─────────────────────
+  notification:
+    build:
+      context: ./services/notification
+      dockerfile: Dockerfile
+    container_name: traffic_notification
+    restart: unless-stopped
+    environment:
+      PORT: 3005
+      DB_HOST: mysql
+      DB_USER: root
+      DB_PASSWORD: root1234
+      DB_NAME: db_notifications
+      AUTH_SERVICE_URL: http://auth:3001
+    ports:
+      - "3005:3005"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      auth:
+        condition: service_started
+    networks:
+      - traffic_network
+
+  # ── GraphQL Gateway (port 4000) ──────────────────────────
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: traffic_gateway
+    restart: unless-stopped
+    environment:
+      PORT: 4000
+      AUTH_URL:     http://auth:3001
+      VEHICLE_URL:  http://vehicle:3002
+      TRAFFIC_URL:  http://traffic:3003
+      INCIDENT_URL: http://incident:3004
+      NOTIF_URL:    http://notification:3005
+    ports:
+      - "4000:4000"
+    depends_on:
+      - auth
+      - vehicle
+      - traffic
+      - incident
+      - notification
+    networks:
+      - traffic_network
+
+# ── Volumes & Réseau ─────────────────────────────────────────
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  traffic_network:
+    driver: bridge

@@ -1,0 +1,226 @@
+# 📊 DIAGRAMMES UML — Traffic Platform
+# Copie chaque bloc sur https://www.plantuml.com/plantuml/uml/
+# pour générer les images PNG/SVG
+
+# ════════════════════════════════════════════════════════════
+# 1. DIAGRAMME DE COMPOSANTS (Architecture)
+# ════════════════════════════════════════════════════════════
+
+@startuml Architecture
+!theme cerulean-outline
+title Architecture Microservices — Traffic Platform
+
+actor Client as C
+component "GraphQL Gateway\n(Apollo :4000)" as GW
+
+component "Auth\n(:3001)"     as AUTH
+component "Vehicle\n(:3002)"  as VEH
+component "Traffic\n(:3003)"  as TRAF
+component "Incident\n(:3004)" as INC
+component "Notif\n(:3005)"    as NOTIF
+
+database "db_auth"          as DB1
+database "db_vehicles"      as DB2
+database "db_traffic"       as DB3
+database "db_incidents"     as DB4
+database "db_notifications" as DB5
+
+C --> GW : GraphQL + JWT
+GW --> AUTH
+GW --> VEH
+GW --> TRAF
+GW --> INC
+GW --> NOTIF
+
+INC ..> NOTIF : notif automatique
+
+AUTH  --> DB1
+VEH   --> DB2
+TRAF  --> DB3
+INC   --> DB4
+NOTIF --> DB5
+
+@enduml
+
+# ════════════════════════════════════════════════════════════
+# 2. DIAGRAMME DE CLASSES
+# ════════════════════════════════════════════════════════════
+
+@startuml Classes
+!theme cerulean-outline
+title Diagramme de Classes
+
+class User {
+  +id: INT
+  +name: VARCHAR
+  +email: VARCHAR
+  +password: VARCHAR
+  +role: ENUM
+  +created_at: TIMESTAMP
+}
+
+class Vehicle {
+  +id: INT
+  +plate: VARCHAR
+  +type: VARCHAR
+  +owner: VARCHAR
+}
+
+class GpsPosition {
+  +id: INT
+  +vehicle_id: INT
+  +latitude: DECIMAL
+  +longitude: DECIMAL
+  +speed: FLOAT
+  +recorded_at: TIMESTAMP
+}
+
+class Zone {
+  +id: INT
+  +name: VARCHAR
+  +lat_min: DECIMAL
+  +lat_max: DECIMAL
+  +lng_min: DECIMAL
+  +lng_max: DECIMAL
+}
+
+class TrafficMeasure {
+  +id: INT
+  +zone_id: INT
+  +density: INT
+  +level: ENUM
+  +measured_at: TIMESTAMP
+}
+
+class Incident {
+  +id: INT
+  +type: ENUM
+  +description: TEXT
+  +latitude: DECIMAL
+  +longitude: DECIMAL
+  +status: ENUM
+  +reported_by: INT
+  +created_at: TIMESTAMP
+}
+
+class Notification {
+  +id: INT
+  +user_id: INT
+  +message: TEXT
+  +is_read: BOOLEAN
+  +created_at: TIMESTAMP
+}
+
+Vehicle "1" *-- "many" GpsPosition
+Zone "1" *-- "many" TrafficMeasure
+User "1" ..> "many" Incident
+User "1" ..> "many" Notification
+
+@enduml
+
+# ════════════════════════════════════════════════════════════
+# 3. SÉQUENCE — Login + Appel sécurisé
+# ════════════════════════════════════════════════════════════
+
+@startuml Sequence_Login
+!theme cerulean-outline
+title Séquence — Login + appel GraphQL
+
+actor User as U
+participant "Gateway" as GW
+participant "Auth :3001" as AUTH
+database "db_auth" as DB
+
+U -> GW : mutation login(email, password)
+GW -> AUTH : POST /login
+AUTH -> DB : SELECT user
+DB --> AUTH : user data
+AUTH -> AUTH : bcrypt.compare\n+ jwt.sign
+AUTH --> GW : {token, user}
+GW --> U : {token, user}
+
+note over U : Stocke le token JWT
+
+U -> GW : query getVehicles\nHeader: Bearer token
+GW -> AUTH : GET /verify
+AUTH -> AUTH : jwt.verify
+AUTH --> GW : {valid: true}
+GW --> U : [vehicles]
+
+@enduml
+
+# ════════════════════════════════════════════════════════════
+# 4. SÉQUENCE — Déclarer un incident
+# ════════════════════════════════════════════════════════════
+
+@startuml Sequence_Incident
+!theme cerulean-outline
+title Séquence — Déclarer un incident
+
+actor Operateur as OP
+participant "Gateway" as GW
+participant "Incident :3004" as INC
+participant "Notif :3005" as NOTIF
+database "db_incidents" as DB1
+database "db_notifications" as DB2
+
+OP -> GW : mutation reportIncident()
+GW -> INC : POST /incidents
+INC -> INC : Validation
+INC -> DB1 : INSERT incident
+DB1 --> INC : id
+
+INC -> NOTIF : POST /notifications
+NOTIF -> DB2 : INSERT notification
+NOTIF --> INC : OK
+
+INC --> GW : {message, id}
+GW --> OP : Incident déclaré
+
+@enduml
+
+# ════════════════════════════════════════════════════════════
+# 5. CAS D'UTILISATION
+# ════════════════════════════════════════════════════════════
+
+@startuml UseCases
+!theme cerulean-outline
+title Cas d'utilisation
+
+left to right direction
+
+actor "Operator" as OP
+actor "Admin" as AD
+
+rectangle "Traffic Platform" {
+  usecase "S'inscrire"                as UC1
+  usecase "Se connecter"              as UC2
+  usecase "Ajouter un véhicule"       as UC3
+  usecase "Consulter les véhicules"   as UC4
+  usecase "Enregistrer position GPS"  as UC5
+  usecase "Créer une zone"            as UC6
+  usecase "Mesurer densité"           as UC7
+  usecase "Voir zones congestionnées" as UC8
+  usecase "Déclarer un incident"      as UC9
+  usecase "Modifier statut incident"  as UC10
+  usecase "Consulter notifications"   as UC11
+  usecase "Gérer les utilisateurs"    as UC12
+}
+
+OP --> UC1
+OP --> UC2
+OP --> UC3
+OP --> UC4
+OP --> UC5
+OP --> UC6
+OP --> UC7
+OP --> UC8
+OP --> UC9
+OP --> UC10
+OP --> UC11
+
+AD --> UC1
+AD --> UC2
+AD --> UC12
+
+@enduml

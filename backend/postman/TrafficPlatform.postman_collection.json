@@ -1,0 +1,199 @@
+{
+  "info": {
+    "name": "Traffic Platform — GraphQL API",
+    "_postman_id": "traffic-platform-2024",
+    "description": "Collection complète pour tester la plateforme de gestion du trafic urbain",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "BASE_URL", "value": "http://localhost:4000", "type": "string" },
+    { "key": "TOKEN",    "value": "",                      "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "🔐 Authentification",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_URL}}", "host": ["{{BASE_URL}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"query\": \"mutation { register(name: \\\"Ali\\\", email: \\\"ali@tekup.tn\\\", password: \\\"pass123\\\", role: \\\"ADMIN\\\") { message } }\"\n}" }
+          }
+        },
+        {
+          "name": "Login (sauvegarde token auto)",
+          "event": [{
+            "listen": "test",
+            "script": { "exec": [
+              "const r = pm.response.json();",
+              "if (r.data && r.data.login) {",
+              "  pm.collectionVariables.set('TOKEN', r.data.login.token);",
+              "  console.log('Token sauvegardé!');",
+              "}"
+            ]}
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_URL}}", "host": ["{{BASE_URL}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"query\": \"mutation { login(email: \\\"ali@tekup.tn\\\", password: \\\"pass123\\\") { token user { id name role } } }\"\n}" }
+          }
+        },
+        {
+          "name": "Mon profil",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "authorization", "value": "Bearer {{TOKEN}}" }
+            ],
+            "url": { "raw": "{{BASE_URL}}", "host": ["{{BASE_URL}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"query\": \"query { me { id name email role } }\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🚗 Véhicules",
+      "item": [
+        {
+          "name": "Ajouter véhicule",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "authorization", "value": "Bearer {{TOKEN}}" }
+            ],
+            "url": { "raw": "{{BASE_URL}}", "host": ["{{BASE_URL}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"query\": \"mutation { addVehicle(plate: \\\"TN-1234-A\\\", type: \\\"Voiture\\\", owner: \\\"Ali\\\") { message } }\"\n}" }
+          }
+        },
+        {
+          "name": "Liste véhicules",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "authorization", "value": "Bearer {{TOKEN}}" }
+            ],
+            "url": { "raw": "{{BASE_URL}}", "host": ["{{BASE_URL}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"query\": \"query { getVehicles { id plate type owner } }\"\n}" }
+          }
+        },
+        {
+          "name": "Position GPS",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "authorization", "value": "Bearer {{TOKEN}}" }
+            ],
+            "url": { "raw": "{{BASE_URL}}", "host": ["{{BASE_URL}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"query\": \"mutation { addGpsPosition(vehicle_id: 1, latitude: 36.8189, longitude: 10.1658, speed: 60) { message } }\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🚦 Trafic",
+      "item": [
+        {
+          "name": "Créer zone",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "authorization", "value": "Bearer {{TOKEN}}" }
+            ],
+            "url": { "raw": "{{BASE_URL}}", "host": ["{{BASE_URL}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"query\": \"mutation { createZone(name: \\\"Centre-Ville\\\", lat_min: 36.80, lat_max: 36.85, lng_min: 10.15, lng_max: 10.20) { message } }\"\n}" }
+          }
+        },
+        {
+          "name": "Mesurer densité",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "authorization", "value": "Bearer {{TOKEN}}" }
+            ],
+            "url": { "raw": "{{BASE_URL}}", "host": ["{{BASE_URL}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"query\": \"mutation { addTrafficMeasure(zone_id: 1, density: 75) { message } }\"\n}" }
+          }
+        },
+        {
+          "name": "Zones congestionnées",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "authorization", "value": "Bearer {{TOKEN}}" }
+            ],
+            "url": { "raw": "{{BASE_URL}}", "host": ["{{BASE_URL}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"query\": \"query { getCongestedZones { zone_id density level } }\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🚨 Incidents",
+      "item": [
+        {
+          "name": "Déclarer incident",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "authorization", "value": "Bearer {{TOKEN}}" }
+            ],
+            "url": { "raw": "{{BASE_URL}}", "host": ["{{BASE_URL}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"query\": \"mutation { reportIncident(type: \\\"Accident\\\", description: \\\"Collision Avenue Bourguiba\\\", latitude: 36.819, longitude: 10.166) { message } }\"\n}" }
+          }
+        },
+        {
+          "name": "Liste incidents",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "authorization", "value": "Bearer {{TOKEN}}" }
+            ],
+            "url": { "raw": "{{BASE_URL}}", "host": ["{{BASE_URL}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"query\": \"query { getIncidents { id type description status } }\"\n}" }
+          }
+        },
+        {
+          "name": "Modifier statut",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "authorization", "value": "Bearer {{TOKEN}}" }
+            ],
+            "url": { "raw": "{{BASE_URL}}", "host": ["{{BASE_URL}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"query\": \"mutation { updateIncidentStatus(id: 1, status: \\\"En cours\\\") { message } }\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔔 Notifications",
+      "item": [
+        {
+          "name": "Mes notifications",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "authorization", "value": "Bearer {{TOKEN}}" }
+            ],
+            "url": { "raw": "{{BASE_URL}}", "host": ["{{BASE_URL}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"query\": \"query { getNotifications { id message is_read created_at } }\"\n}" }
+          }
+        }
+      ]
+    }
+  ]
+}
