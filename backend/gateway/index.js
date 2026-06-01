@@ -234,10 +234,11 @@ function auth(token) {
 
 // Extrait un message lisible depuis une erreur axios et le relance
 function svcErr(err) {
-  const msg = err.response?.data?.error
-    || err.response?.data?.message
-    || err.message
-    || 'Service indisponible';
+  const msg = err?.response?.data?.error
+    || err?.response?.data?.message
+    || err?.message
+    || (err?.code === 'ECONNREFUSED' ? 'Service non démarré — lance start-all.bat' : 'Service indisponible');
+  console.error(`[Gateway] ${err?.code || ''} ${msg}`);
   throw new Error(msg);
 }
 
