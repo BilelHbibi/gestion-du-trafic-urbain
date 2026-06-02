@@ -1,15 +1,20 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Overview      from '../components/Overview'
-import VehiclesTab   from '../components/VehiclesTab'
-import TrafficTab    from '../components/TrafficTab'
-import IncidentsTab  from '../components/IncidentsTab'
-import NotifsTab     from '../components/NotifsTab'
+import { useQuery, gql } from '@apollo/client'
+import Overview     from '../components/Overview'
+import VehiclesTab  from '../components/VehiclesTab'
+import TrafficTab   from '../components/TrafficTab'
+import IncidentsTab from '../components/IncidentsTab'
+import NotifsTab    from '../components/NotifsTab'
+
+const NOTIF_COUNT = gql`query { getNotifications { id is_read } }`
 
 export default function Dashboard() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('overview')
   const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const { data } = useQuery(NOTIF_COUNT, { pollInterval: 5000 })
+  const unread = data?.getNotifications?.filter(n => !n.is_read).length || 0
 
   const handleLogout = () => {
     localStorage.removeItem('token')
@@ -18,51 +23,77 @@ export default function Dashboard() {
   }
 
   const tabs = [
-    { id: 'overview',  label: 'Vue d\'ensemble', icon: '📊' },
-    { id: 'vehicles',  label: 'Véhicules',       icon: '🚗' },
-    { id: 'traffic',   label: 'Trafic',          icon: '🚦' },
-    { id: 'incidents', label: 'Incidents',       icon: '🚨' },
-    { id: 'notifs',    label: 'Notifications',   icon: '🔔' },
+    { id: 'overview',  label: "Vue d'ensemble", icon: '📊' },
+    { id: 'vehicles',  label: 'Véhicules',      icon: '🚗' },
+    { id: 'traffic',   label: 'Trafic',         icon: '🚦' },
+    { id: 'incidents', label: 'Incidents',      icon: '🚨' },
+    { id: 'notifs',    label: 'Notifications',  icon: '🔔' },
   ]
 
-  return (
-    <>
-      <nav className="navbar">
-        <div className="navbar-brand">
-          <span className="logo">🚦</span>
-          <span>Traffic Platform — Tunis</span>
-        </div>
-        <div className="user-info">
-          <span className="user-name">{user.name}</span>
-          <span className={`role-badge ${user.role === 'ADMIN' ? 'admin' : ''}`}>
-            {user.role}
-          </span>
-          <button onClick={handleLogout} className="btn btn-secondary">
-            🚪 Déconnexion
-          </button>
-        </div>
-      </nav>
+  const currentTab = tabs.find(t => t.id === activeTab)
 
-      <div className="container">
-        <div className="tabs">
+  return (
+    <div className="layout">
+      <aside className="sidebar">
+        <div className="sidebar-brand">
+          <div className="brand-icon">🚦</div>
+          <div>
+            <span className="brand-name">Traffic Platform</span>
+            <span className="brand-sub">Tunis Control Center</span>
+          </div>
+        </div>
+
+        <nav className="sidebar-nav">
           {tabs.map(tab => (
             <button
               key={tab.id}
-              className={`tab ${activeTab === tab.id ? 'active' : ''}`}
+              className={`nav-item ${activeTab === tab.id ? 'active' : ''}`}
               onClick={() => setActiveTab(tab.id)}
             >
-              <span>{tab.icon}</span>
-              <span>{tab.label}</span>
+              <span className="nav-icon">{tab.icon}</span>
+              <span className="nav-label">{tab.label}</span>
+              {tab.id === 'notifs' && unread > 0 && (
+                <span className="nav-badge">{unread}</span>
+              )}
             </button>
           ))}
+        </nav>
+
+        <div className="sidebar-footer">
+          <div className="user-info-card">
+            <div className="user-avatar">
+              {(user.name || 'U')[0].toUpperCase()}
+            </div>
+            <div>
+              <span className="user-name-side">{user.name}</span>
+              <span className="user-role-side">{user.role}</span>
+            </div>
+          </div>
+          <button onClick={handleLogout} className="logout-btn">
+            Déconnexion
+          </button>
+        </div>
+      </aside>
+
+      <main className="main-content">
+        <div className="top-bar">
+          <span className="page-title">
+            {currentTab?.icon} {currentTab?.label}
+          </span>
+          <div className="live-badge">
+            <span className="live-dot" />
+            Temps réel
+          </div>
         </div>
 
-        {activeTab === 'overview'  && <Overview />}
-        {activeTab === 'vehicles'  && <VehiclesTab />}
-        {activeTab === 'traffic'   && <TrafficTab />}
-        {activeTab === 'incidents' && <IncidentsTab />}
-        {activeTab === 'notifs'    && <NotifsTab />}
-      </div>
-    </>
+        <div className="content-area">
+          {activeTab === 'overview'  && <Overview />}
+          {activeTab === 'vehicles'  && <VehiclesTab />}
+          {activeTab === 'traffic'   && <TrafficTab />}
+          {activeTab === 'incidents' && <IncidentsTab />}
+          {activeTab === 'notifs'    && <NotifsTab />}
+        </div>
+      </main>
+    </div>
   )
 }
