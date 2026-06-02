@@ -6,6 +6,7 @@ import VehiclesTab  from '../components/VehiclesTab'
 import TrafficTab   from '../components/TrafficTab'
 import IncidentsTab from '../components/IncidentsTab'
 import NotifsTab    from '../components/NotifsTab'
+import UsersTab     from '../components/UsersTab'
 
 const NOTIF_COUNT = gql`query { getNotifications { id is_read } }`
 
@@ -22,12 +23,15 @@ export default function Dashboard() {
     navigate('/login')
   }
 
+  const isAdmin = user.role === 'ADMIN'
+
   const tabs = [
     { id: 'overview',  label: "Vue d'ensemble", icon: '📊' },
     { id: 'vehicles',  label: 'Véhicules',      icon: '🚗' },
     { id: 'traffic',   label: 'Trafic',         icon: '🚦' },
     { id: 'incidents', label: 'Incidents',      icon: '🚨' },
     { id: 'notifs',    label: 'Notifications',  icon: '🔔' },
+    ...(isAdmin ? [{ id: 'users', label: 'Utilisateurs', icon: '👥', adminOnly: true }] : []),
   ]
 
   const currentTab = tabs.find(t => t.id === activeTab)
@@ -44,7 +48,7 @@ export default function Dashboard() {
         </div>
 
         <nav className="sidebar-nav">
-          {tabs.map(tab => (
+          {tabs.filter(t => !t.adminOnly).map(tab => (
             <button
               key={tab.id}
               className={`nav-item ${activeTab === tab.id ? 'active' : ''}`}
@@ -57,6 +61,18 @@ export default function Dashboard() {
               )}
             </button>
           ))}
+          {isAdmin && (
+            <>
+              <div className="nav-section-label">Administration</div>
+              <button
+                className={`nav-item ${activeTab === 'users' ? 'active' : ''}`}
+                onClick={() => setActiveTab('users')}
+              >
+                <span className="nav-icon">👥</span>
+                <span className="nav-label">Utilisateurs</span>
+              </button>
+            </>
+          )}
         </nav>
 
         <div className="sidebar-footer">
@@ -92,6 +108,7 @@ export default function Dashboard() {
           {activeTab === 'traffic'   && <TrafficTab />}
           {activeTab === 'incidents' && <IncidentsTab />}
           {activeTab === 'notifs'    && <NotifsTab />}
+          {activeTab === 'users'     && isAdmin && <UsersTab />}
         </div>
       </main>
     </div>

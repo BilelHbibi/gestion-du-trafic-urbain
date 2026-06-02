@@ -1,0 +1,650 @@
+# =============================================================
+#  TRAFFIC PLATFORM — Requêtes GraphQL de test (A → Z)
+#  Gateway : http://localhost:4000/graphql
+#  Toutes les requêtes protégées nécessitent le header :
+#    Authorization: Bearer <token>
+#  Obtenir un token → voir mutation LOGIN ci-dessous
+# =============================================================
+
+
+# ─────────────────────────────────────────────────────────────
+#  A. AUTHENTIFICATION
+# ─────────────────────────────────────────────────────────────
+
+# A1. Inscription d'un opérateur
+mutation REGISTER_OPERATOR {
+  register(
+    name: "Ali Ben Salah"
+    email: "ali@test.com"
+    password: "password123"
+    role: "OPERATOR"
+  ) {
+    message
+  }
+}
+
+# A2. Inscription d'un administrateur
+mutation REGISTER_ADMIN {
+  register(
+    name: "Admin Principal"
+    email: "admin@test.com"
+    password: "admin123"
+    role: "ADMIN"
+  ) {
+    message
+  }
+}
+
+# A3. Connexion — retourne token + infos utilisateur
+mutation LOGIN {
+  login(email: "admin@test.com", password: "admin123") {
+    token
+    user {
+      id
+      name
+      email
+      role
+    }
+  }
+}
+
+# A4. Connexion opérateur
+mutation LOGIN_OPERATOR {
+  login(email: "ali@test.com", password: "password123") {
+    token
+    user {
+      id
+      name
+      email
+      role
+    }
+  }
+}
+
+# A5. Mon profil (token requis)
+query ME {
+  me {
+    id
+    name
+    email
+    role
+    created_at
+  }
+}
+
+# A6. Liste de tous les utilisateurs (ADMIN uniquement)
+query GET_USERS {
+  getUsers {
+    id
+    name
+    email
+    role
+    created_at
+  }
+}
+
+# A7. Supprimer un utilisateur (ADMIN uniquement)
+mutation DELETE_USER {
+  deleteUser(id: 2) {
+    message
+  }
+}
+
+
+# ─────────────────────────────────────────────────────────────
+#  B. VÉHICULES
+# ─────────────────────────────────────────────────────────────
+
+# B1. Liste de tous les véhicules
+query GET_VEHICLES {
+  getVehicles {
+    id
+    plate
+    type
+    owner
+    created_at
+  }
+}
+
+# B2. Un véhicule par ID
+query GET_VEHICLE {
+  getVehicle(id: 1) {
+    id
+    plate
+    type
+    owner
+    created_at
+  }
+}
+
+# B3. Ajouter un véhicule
+mutation ADD_VEHICLE {
+  addVehicle(
+    plate: "TN-1234-A"
+    type: "Voiture"
+    owner: "Bilel Hbibi"
+  ) {
+    message
+  }
+}
+
+# B4. Ajouter un camion
+mutation ADD_CAMION {
+  addVehicle(
+    plate: "TN-5678-B"
+    type: "Camion"
+    owner: "Mohamed Trabelsi"
+  ) {
+    message
+  }
+}
+
+# B5. Ajouter un bus
+mutation ADD_BUS {
+  addVehicle(
+    plate: "TN-9012-C"
+    type: "Bus"
+    owner: "Société Transport Tunis"
+  ) {
+    message
+  }
+}
+
+# B6. Mettre à jour un véhicule
+mutation UPDATE_VEHICLE {
+  updateVehicle(id: 1, owner: "Nouveau Propriétaire") {
+    message
+  }
+}
+
+# B7. Simuler une position GPS
+mutation ADD_GPS_POSITION {
+  addGpsPosition(
+    vehicle_id: 1
+    latitude: 36.8065
+    longitude: 10.1815
+    speed: 45.5
+  ) {
+    message
+  }
+}
+
+# B8. Historique GPS d'un véhicule
+query GET_VEHICLE_HISTORY {
+  getVehicleHistory(id: 1, limit: 10) {
+    id
+    latitude
+    longitude
+    speed
+    recorded_at
+  }
+}
+
+# B9. Dernière position connue
+query GET_LAST_POSITION {
+  getLastPosition(id: 1) {
+    id
+    latitude
+    longitude
+    speed
+    recorded_at
+  }
+}
+
+# B10. Statistiques véhicules
+query GET_VEHICLE_STATS {
+  getVehicleStats {
+    total_vehicles
+    total_positions
+    active_today
+  }
+}
+
+# B11. Supprimer un véhicule
+mutation DELETE_VEHICLE {
+  deleteVehicle(id: 3) {
+    message
+  }
+}
+
+
+# ─────────────────────────────────────────────────────────────
+#  C. TRAFIC — ZONES & MESURES
+# ─────────────────────────────────────────────────────────────
+
+# C1. Liste des zones
+query GET_ZONES {
+  getZones {
+    id
+    name
+    lat_min
+    lat_max
+    lng_min
+    lng_max
+  }
+}
+
+# C2. Résumé des zones avec densité actuelle
+query GET_ZONE_SUMMARY {
+  getZoneSummary {
+    id
+    name
+    density
+    level
+    measured_at
+    lat_min
+    lat_max
+    lng_min
+    lng_max
+  }
+}
+
+# C3. Zones congestionnées uniquement
+query GET_CONGESTED_ZONES {
+  getCongestedZones {
+    zone_id
+    name
+    density
+    level
+    measured_at
+  }
+}
+
+# C4. Créer une zone — Centre-Ville
+mutation CREATE_ZONE_CENTRE {
+  createZone(
+    name: "Centre-Ville Tunis"
+    lat_min: 36.80
+    lat_max: 36.85
+    lng_min: 10.15
+    lng_max: 10.20
+  ) {
+    message
+  }
+}
+
+# C5. Créer une zone — Banlieue Nord
+mutation CREATE_ZONE_NORD {
+  createZone(
+    name: "Banlieue Nord"
+    lat_min: 36.85
+    lat_max: 36.92
+    lng_min: 10.17
+    lng_max: 10.25
+  ) {
+    message
+  }
+}
+
+# C6. Créer une zone — Lac
+mutation CREATE_ZONE_LAC {
+  createZone(
+    name: "Lac de Tunis"
+    lat_min: 36.82
+    lat_max: 36.87
+    lng_min: 10.22
+    lng_max: 10.30
+  ) {
+    message
+  }
+}
+
+# C7. Ajouter une mesure de densité — faible (< 20)
+mutation MEASURE_FAIBLE {
+  addTrafficMeasure(zone_id: 1, density: 12) {
+    message
+  }
+}
+
+# C8. Ajouter une mesure de densité — moyen (20-49)
+mutation MEASURE_MOYEN {
+  addTrafficMeasure(zone_id: 1, density: 35) {
+    message
+  }
+}
+
+# C9. Ajouter une mesure de densité — élevé (≥ 50) → déclenche WebSocket
+mutation MEASURE_ELEVE {
+  addTrafficMeasure(zone_id: 1, density: 78) {
+    message
+  }
+}
+
+# C10. Mesures historiques d'une zone
+query GET_ZONE_MEASURES {
+  getZoneMeasures(zone_id: 1, limit: 20) {
+    id
+    zone_id
+    density
+    level
+    measured_at
+  }
+}
+
+# C11. Statistiques trafic globales
+query GET_TRAFFIC_STATS {
+  getTrafficStats {
+    total_zones
+    total_measures
+    congested
+  }
+}
+
+# C12. Supprimer une zone
+mutation DELETE_ZONE {
+  deleteZone(id: 3) {
+    message
+  }
+}
+
+
+# ─────────────────────────────────────────────────────────────
+#  D. INCIDENTS
+# ─────────────────────────────────────────────────────────────
+
+# D1. Liste de tous les incidents
+query GET_INCIDENTS {
+  getIncidents {
+    id
+    type
+    description
+    latitude
+    longitude
+    status
+    reported_by
+    created_at
+  }
+}
+
+# D2. Filtrer par type
+query GET_INCIDENTS_BY_TYPE {
+  getIncidents(type: "Accident") {
+    id
+    type
+    description
+    status
+    created_at
+  }
+}
+
+# D3. Filtrer par statut
+query GET_INCIDENTS_BY_STATUS {
+  getIncidents(status: "Signale") {
+    id
+    type
+    description
+    status
+    created_at
+  }
+}
+
+# D4. Un incident par ID
+query GET_INCIDENT {
+  getIncident(id: 1) {
+    id
+    type
+    description
+    latitude
+    longitude
+    status
+    reported_by
+    created_at
+  }
+}
+
+# D5. Déclarer un accident
+mutation REPORT_ACCIDENT {
+  reportIncident(
+    type: "Accident"
+    description: "Collision entre deux voitures sur Avenue Bourguiba"
+    latitude: 36.8068
+    longitude: 10.1818
+  ) {
+    message
+  }
+}
+
+# D6. Déclarer des travaux
+mutation REPORT_TRAVAUX {
+  reportIncident(
+    type: "Travaux"
+    description: "Travaux de voirie — voie réduite à 1 file"
+    latitude: 36.8120
+    longitude: 10.1650
+  ) {
+    message
+  }
+}
+
+# D7. Déclarer une route fermée
+mutation REPORT_ROUTE_FERMEE {
+  reportIncident(
+    type: "Route fermee"
+    description: "Route bloquée suite aux inondations"
+    latitude: 36.7950
+    longitude: 10.1720
+  ) {
+    message
+  }
+}
+
+# D8. Déclarer un embouteillage
+mutation REPORT_EMBOUTEILLAGE {
+  reportIncident(
+    type: "Embouteillage"
+    description: "Congestion importante heure de pointe"
+    latitude: 36.8200
+    longitude: 10.1900
+  ) {
+    message
+  }
+}
+
+# D9. Changer le statut vers "En cours"
+mutation UPDATE_STATUS_EN_COURS {
+  updateIncidentStatus(id: 1, status: "En cours") {
+    message
+  }
+}
+
+# D10. Résoudre un incident
+mutation UPDATE_STATUS_RESOLU {
+  updateIncidentStatus(id: 1, status: "Resolu") {
+    message
+  }
+}
+
+# D11. Statistiques incidents
+query GET_INCIDENT_STATS {
+  getIncidentStats {
+    total
+    today
+    by_type {
+      type
+      count
+    }
+    by_status {
+      status
+      count
+    }
+  }
+}
+
+# D12. Supprimer un incident
+mutation DELETE_INCIDENT {
+  deleteIncident(id: 5) {
+    message
+  }
+}
+
+
+# ─────────────────────────────────────────────────────────────
+#  E. NOTIFICATIONS
+# ─────────────────────────────────────────────────────────────
+
+# E1. Toutes mes notifications
+query GET_NOTIFICATIONS {
+  getNotifications {
+    id
+    user_id
+    message
+    is_read
+    created_at
+  }
+}
+
+# E2. Notifications non lues uniquement
+query GET_UNREAD_NOTIFICATIONS {
+  getUnreadNotifications {
+    id
+    message
+    is_read
+    created_at
+  }
+}
+
+# E3. Compteur non lues / total
+query GET_NOTIFICATION_COUNT {
+  getNotificationCount {
+    total
+    unread
+  }
+}
+
+# E4. Marquer une notification comme lue
+mutation MARK_NOTIFICATION_READ {
+  markNotificationRead(id: 1) {
+    message
+  }
+}
+
+# E5. Tout marquer comme lu
+mutation MARK_ALL_READ {
+  markAllNotificationsRead {
+    message
+  }
+}
+
+# E6. Supprimer une notification
+mutation DELETE_NOTIFICATION {
+  deleteNotification(id: 1) {
+    message
+  }
+}
+
+
+# ─────────────────────────────────────────────────────────────
+#  F. PLATEFORME — SANTÉ & STATISTIQUES GLOBALES
+# ─────────────────────────────────────────────────────────────
+
+# F1. Health check de tous les microservices
+query HEALTH_CHECK {
+  healthCheck {
+    service
+    status
+    timestamp
+  }
+}
+
+# F2. Statistiques globales de la plateforme
+query GET_PLATFORM_STATS {
+  getPlatformStats {
+    total_users
+    total_vehicles
+    total_zones
+    total_incidents
+    total_notifications
+    congested_zones
+  }
+}
+
+
+# ─────────────────────────────────────────────────────────────
+#  G. REQUÊTES COMBINÉES (dashboard)
+# ─────────────────────────────────────────────────────────────
+
+# G1. Chargement dashboard complet en 1 requête
+query DASHBOARD_FULL {
+  getVehicles {
+    id
+    plate
+    type
+  }
+  getZones {
+    id
+    name
+  }
+  getIncidents {
+    id
+    type
+    status
+  }
+  getNotifications {
+    id
+    is_read
+  }
+  getPlatformStats {
+    total_users
+    total_vehicles
+    total_zones
+    total_incidents
+    congested_zones
+  }
+}
+
+# G2. Vue trafic temps réel
+query TRAFFIC_REALTIME {
+  getCongestedZones {
+    zone_id
+    name
+    density
+    level
+    measured_at
+  }
+  getTrafficStats {
+    total_zones
+    total_measures
+    congested
+  }
+}
+
+# G3. Vue incidents actifs
+query INCIDENTS_ACTIFS {
+  getIncidents(status: "Signale") {
+    id
+    type
+    description
+    latitude
+    longitude
+    created_at
+  }
+  getIncidentStats {
+    total
+    today
+    by_type { type count }
+  }
+}
+
+
+# ─────────────────────────────────────────────────────────────
+#  H. SCÉNARIO COMPLET — Flux de test de bout en bout
+# ─────────────────────────────────────────────────────────────
+#
+#  Ordre d'exécution recommandé :
+#
+#  1. REGISTER_ADMIN         → créer un compte admin
+#  2. LOGIN                  → récupérer le token JWT
+#     ↳ Insérer token dans le header : Authorization: Bearer <token>
+#  3. GET_USERS              → vérifier que l'admin voit tous les comptes
+#  4. ADD_VEHICLE            → enregistrer un véhicule
+#  5. CREATE_ZONE_CENTRE     → créer une zone de surveillance
+#  6. ADD_GPS_POSITION       → simuler une position GPS
+#  7. MEASURE_ELEVE          → mesure densité 78 → WebSocket traffic_alert
+#  8. REPORT_ACCIDENT        → déclarer un incident → WebSocket new_incident
+#  9. GET_NOTIFICATIONS      → vérifier la notification créée
+# 10. MARK_NOTIFICATION_READ → marquer la notification
+# 11. UPDATE_STATUS_RESOLU   → résoudre l'incident → WebSocket incident_updated
+# 12. HEALTH_CHECK           → vérifier que tous les services sont OK
+# 13. GET_PLATFORM_STATS     → résumé global de la plateforme
+#
+# =============================================================
